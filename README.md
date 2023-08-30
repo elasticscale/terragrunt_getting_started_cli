@@ -2,6 +2,14 @@
 
 A CLI tool to help you get started with our Terragrunt pipeline module. This way you do not need to replace files, just run this CLI, follow the instructions and push the repositories.
 
+## How to use
+
+Make a empty folder for the files, note the absolute path and run:
+
+    docker run -it --volume /Users/alex/Desktop/output:/var/app/output alexjeen/terragrunt-helper-cli:latest 
+
+Follow the instructions and push all the branches to your own remotes.    
+
 ## About ElasticScale
 
 ElasticScale is a Solutions Architecture as a Service focusing on start-ups and scale-ups. For a fixed monthly subscription fee, we handle all your AWS workloads. Some services include:
