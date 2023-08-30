@@ -197,8 +197,9 @@ class RepoCommand extends Ahc\Cli\Input\Command
             "staging",
             "prod"
         ]);
+        // tag the initial version of the modules
         $this->tag("infrastructure_modules", "1.0.0");
-
+        // man i make it really easy? :)
         $content = <<<EOT
 region                                 = "$region"
 docker_hub_username                    = "$dockerhubUsername"
@@ -244,8 +245,6 @@ EOT;
     {
         $rii = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($folder));
         $files = array();
-
-        /** @var SplFileInfo $file */
         foreach ($rii as $file) {
             if(!in_array($file->getExtension(), ["hcl", "yaml"])) {
                 continue;
@@ -290,7 +289,6 @@ EOT;
     {
         $io = $this->app()->io();
         $io->write("Initializing GIT repo", $folder);
-        // init
         $shell = new Ahc\Cli\Helper\Shell($command = 'cd ' . $this->baseFolder . $folder . ' && git init', $rawInput = null);
         $shell->execute($async = false);
         $io->comment($shell->getOutput());
@@ -300,12 +298,10 @@ EOT;
 
     private function commitGit($folder, $message)
     {
-        // add
         $io = $this->app()->io();
         $shell = new Ahc\Cli\Helper\Shell($command = 'cd ' . $this->baseFolder . $folder . ' && git add .', $rawInput = null);
         $shell->execute($async = false);
         $io->comment($shell->getOutput());
-        // commit
         $shell = new Ahc\Cli\Helper\Shell($command = 'cd ' . $this->baseFolder . $folder . ' && git commit -m "'.$message.'"', $rawInput = null);
         $shell->execute($async = false);
         $io->comment($shell->getOutput());
@@ -315,7 +311,6 @@ EOT;
     {
         $io = $this->app()->io();
         $io->write("Downloading $name from $url", true);
-
         $fh = fopen($this->baseFolder . $name, "w");
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_FILE, $fh);
@@ -328,14 +323,12 @@ EOT;
     {
         $io = $this->app()->io();
         $io->write("Unzipping $filename", true);
-
         $zip = new ZipArchive();
         $res = $zip->open($this->baseFolder . $filename);
         if ($res === true) {
             $zip->extractTo($this->baseFolder);
             $zip->close();
         }
-
         rename($this->baseFolder . $folder, $this->baseFolder . str_replace(".zip", "", $filename));
         unlink($this->baseFolder . $filename);
     }
