@@ -7,7 +7,7 @@ class RepoCommand extends Ahc\Cli\Input\Command
 
     public function __construct()
     {
-        parent::__construct('init', 'This initializes the GIT repos for your Terragrunt project');
+        parent::__construct('', 'This creates the GIT repos for your Terragrunt project based on the elasticscale repos');
     }
 
     private function dirIsEmpty($dir)
