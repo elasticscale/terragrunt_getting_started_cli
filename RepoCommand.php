@@ -1,6 +1,6 @@
 <?php
 
-class InitCommand extends Ahc\Cli\Input\Command
+class RepoCommand extends Ahc\Cli\Input\Command
 {
     // includes trailing slash
     private $baseFolder = './output/';
@@ -14,7 +14,7 @@ class InitCommand extends Ahc\Cli\Input\Command
     {
         $handle = opendir($dir);
         while (false !== ($entry = readdir($handle))) {
-            if ($entry != "." && $entry != "..") {
+            if ($entry != "." && $entry != ".." && $entry != ".DS_Store") {
                 closedir($handle);
                 return false;
             }
@@ -25,36 +25,31 @@ class InitCommand extends Ahc\Cli\Input\Command
 
     public function interact(Ahc\Cli\IO\Interactor $io): void
     {
-        // todo remove
-        exec("rm -rf $this->baseFolder");
-        mkdir($this->baseFolder, 0777);
-
-
-
         if (!$this->dirIsEmpty($this->baseFolder)) {
             throw new Exception('The output directory (volume) must be empty (including any hidden files)');
         }
 
         $io = $this->app()->io();
 
-        $io->write("First we need some information about your repositories\n", true);
+        $io->write("Let us start off with some base information", true);
 
-        // change below strings to $this->set calls:
-        $this->set("gitRepoPath", 'elasticscale/acmesystems_infrastructure');
-        $this->set("gitRepoModulesPath", 'elasticscale/acmesystems_infrastructure_modules');
-        $this->set("gitCloneUrl", 'git::ssh://git@github.com/elasticscale/acmesystems_infrastructure_modules.git');
-        $this->set("prefix", 'acmesystems');
-        $this->set("securityAccountId", '123456789000');
-        $this->set("infrastructureAccountId", '123456789013');
-        $this->set("stagingAccountId", '123456789014');
-        $this->set("productionAccountId", '123456789018');
-        $this->set("dockerhubUsername", 'elasticscale');
-        $this->set("dockerhubToken", 'dckr_pat_1234567890123456789012345678901234567890');
+        if (!$this->region) {
+            $io->write("Choose the region to deploy your infrastructure too", true);
+            $io->write("For example: eu-west-1", true);
+            $this->set('region', $io->prompt('Enter your AWS region', 'eu-west-1'));
+        }
 
-        // todo with validation (code star connection types)
-        $this->set("vcsType", "GitHub");
-        // todo, add region
-        $this->set("region", "eu-west-1");
+        if (!$this->vcsType) {
+            $io->write("Choose the VCS type for the Codestar connection", true);
+            $this->set('vcsType', $io->choice('Choose your VCS system', [
+                'GitHub',
+                'GitHubEnterpriseServer',
+                'Bitbucket',
+                'GitLab'
+            ], 'GitHub'));
+        }
+
+        $io->write("Now we need some information about your repositories", true);
 
         if (!$this->gitRepoPath) {
             $io->write("Enter the path to your GIT repo, mostly this is some format like organisation/repo_infrastructure", true);
@@ -136,6 +131,8 @@ class InitCommand extends Ahc\Cli\Input\Command
         $io->write("This is your input, is this correct?", true);
 
         $io->table([
+            ['field' => 'region', 'input' => $this->region],
+            ['field' => 'vcsType', 'input' => $this->vcsType],
             ['field' => 'gitRepoPath', 'input' => $this->gitRepoPath],
             ['field' => 'gitRepoModulesPath', 'input' => $this->gitRepoModulesPath],
             ['field' => 'gitCloneUrl', 'input' => $this->gitCloneUrl],
@@ -148,12 +145,11 @@ class InitCommand extends Ahc\Cli\Input\Command
             ['field' => 'dockerhubToken', 'input' => $this->dockerhubToken],
         ]);
 
-        // todo enable
-        // $confirm = $io->confirm('Are you happy with these settings? If you choose y the GIT repos will be generated for you', 'n');
+        $confirm = $io->confirm('Are you happy with these settings? If you choose y the GIT repos will be generated for you in the volume specified', 'n');
 
-        // if (!$confirm) {
-        //     throw new Exception("User aborted, please run script again with the correct inputs");
-        // }
+        if (!$confirm) {
+            throw new Exception("User aborted, please run script again with the correct inputs");
+        }
     }
 
     public function execute(
@@ -194,7 +190,6 @@ class InitCommand extends Ahc\Cli\Input\Command
         $this->replaceInFiles("replacing infra account ID", "136431940157", $infrastructureAccountId, "infrastructure");
         $this->replaceInFiles("replacing staging account ID", "257804771987", $stagingAccountId, "infrastructure");
         $this->replaceInFiles("replacing prod account ID", "540259191132", $productionAccountId, "infrastructure");
-        // todo, generate tfvars file for example pipeline
         $this->branches("infrastructure", [
             "local",
             "infra",
@@ -214,6 +209,9 @@ full_modules_url                       = "$gitCloneUrl"
 infrastructure_account_id              = "$infrastructureAccountId"
 EOT;
         $this->generateTempVarsFile("infrastructure_modules", $content);
+        // rename it so the names are correct for an easy push
+        rename($this->baseFolder . "infrastructure", $this->baseFolder . "{$this->prefix}_infrastructure");
+        rename($this->baseFolder . "infrastructure_modules", $this->baseFolder . "{$this->prefix}_infrastructure_modules");
         // exit code
         return 0;
     }
