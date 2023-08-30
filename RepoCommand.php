@@ -25,11 +25,16 @@ class RepoCommand extends Ahc\Cli\Input\Command
 
     public function interact(Ahc\Cli\IO\Interactor $io): void
     {
+        $io = $this->app()->io();
+
+        if (!file_exists($this->baseFolder) || !is_dir($this->baseFolder)) {
+            $io->comment('Example command: docker run -it --volume /Users/alex/Desktop/output:/var/app/output containerimage', true);
+            throw new Exception('Mount a empty folder to /var/app/output in the container!');
+        }
+
         if (!$this->dirIsEmpty($this->baseFolder)) {
             throw new Exception('The output directory (volume) must be empty (including any hidden files)');
         }
-
-        $io = $this->app()->io();
 
         $io->write("Let us start off with some base information", true);
 
@@ -165,6 +170,7 @@ class RepoCommand extends Ahc\Cli\Input\Command
         $dockerhubUsername,
         $dockerhubToken
     ) {
+        $io = $this->app()->io();
         // download and unzip
         $this->download("infrastructure.zip", "https://github.com/elasticscale/elasticscale_infrastructure/archive/refs/heads/main.zip");
         $this->unzip("infrastructure.zip", "elasticscale_infrastructure-main");
@@ -213,6 +219,7 @@ EOT;
         // rename it so the names are correct for an easy push
         rename($this->baseFolder . "infrastructure", $this->baseFolder . "{$this->prefix}_infrastructure");
         rename($this->baseFolder . "infrastructure_modules", $this->baseFolder . "{$this->prefix}_infrastructure_modules");
+        $io->greenBold("Done! You can find the repos in the output folder and push them to your GIT organisation to continue.", true);
         // exit code
         return 0;
     }
@@ -293,7 +300,6 @@ EOT;
         $shell->execute($async = false);
         $io->comment($shell->getOutput());
         $this->commitGit($folder, "Initial commit");
-
     }
 
     private function commitGit($folder, $message)
