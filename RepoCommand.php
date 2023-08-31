@@ -221,8 +221,8 @@ EOT;
         $gitRepoPathLast = end($partsA);
         $partsB = explode("/", $gitRepoModulesPath);
         $gitRepoModulesPathLast = end($partsB);
-        rename($this->baseFolder . "infrastructure", $this->baseFolder . "$gitRepoPathLast");
-        rename($this->baseFolder . "infrastructure_modules", $this->baseFolder . "$gitRepoModulesPath");
+        rename($this->baseFolder . "infrastructure", $this->baseFolder . $gitRepoPathLast);
+        rename($this->baseFolder . "infrastructure_modules", $this->baseFolder . $gitRepoModulesPathLast);
         $io->greenBold("Done! You can find the repos in the output folder and push them to your GIT organisation to continue.", true);
         // exit code
         return 0;
