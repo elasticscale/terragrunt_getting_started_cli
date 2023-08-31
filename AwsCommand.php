@@ -134,7 +134,7 @@ class AwsCommand extends Ahc\Cli\Input\Command
             }
             $this->moveAccount($infrastructureAccountId, $ouId['rootId'], $ouId['ouId']);
             $this->createInfrastructureRole("infra", $infrastructureAccountId, $infrastructureAccountId);
-            $io->boldGreen("Infrastructure account was created with ID: " + $infrastructureAccountId, true);
+            $io->boldGreen("Infrastructure account was created with ID: " . $infrastructureAccountId, true);
         } catch(Exception $e) {
             $io->boldRed("Could not create infrastructure account: " . $e->getMessage(), true);
             return 1;
@@ -147,7 +147,7 @@ class AwsCommand extends Ahc\Cli\Input\Command
             }
             $this->moveAccount($localAccountId, $ouId['rootId'], $ouId['ouId']);
             // no need for the infra role here
-            $io->boldGreen("Local account was created with ID: " + $localAccountId, true);
+            $io->boldGreen("Local account was created with ID: " . $localAccountId, true);
         } catch(Exception $e) {
             $io->boldRed("Could not create local account: " . $e->getMessage(), true);
             return 1;
@@ -160,7 +160,7 @@ class AwsCommand extends Ahc\Cli\Input\Command
             }
             $this->moveAccount($securityAccountId, $ouId['rootId'], $ouId['ouId']);
             $this->createInfrastructureRole("security", $infrastructureAccountId, $securityAccountId);
-            $io->boldGreen("Security account was created with ID: " + $securityAccountId, true);
+            $io->boldGreen("Security account was created with ID: " . $securityAccountId, true);
         } catch(Exception $e) {
             $io->boldRed("Could not create security account: " . $e->getMessage(), true);
             return 1;
@@ -173,7 +173,7 @@ class AwsCommand extends Ahc\Cli\Input\Command
             }
             $this->moveAccount($stagingAccountId, $ouId['rootId'], $ouId['ouId']);
             $this->createInfrastructureRole("staging", $infrastructureAccountId, $stagingAccountId);
-            $io->boldGreen("Staging account was created with ID: " + $stagingAccountId, true);
+            $io->boldGreen("Staging account was created with ID: " . $stagingAccountId, true);
         } catch(Exception $e) {
             $io->boldRed("Could not create staging account: " . $e->getMessage(), true);
             return 1;
@@ -186,7 +186,7 @@ class AwsCommand extends Ahc\Cli\Input\Command
             }
             $this->moveAccount($productionAccountId, $ouId['rootId'], $ouId['ouId']);
             $this->createInfrastructureRole("prod", $infrastructureAccountId, $productionAccountId);
-            $io->boldGreen("Production account was created with ID: " + $productionAccountId, true);
+            $io->boldGreen("Production account was created with ID: " . $productionAccountId, true);
         } catch(Exception $e) {
             $io->boldRed("Could not create production account: " . $e->getMessage(), true);
             return 1;
