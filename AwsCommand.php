@@ -65,12 +65,7 @@ class AwsCommand extends Ahc\Cli\Input\Command
             $this->set('ouName', $io->prompt('Enter the new OU name'));
         }
 
-        try {
-            $awsOrganizations = $this->getAwsOrganizations();
-        } catch(Exception $e) {
-            $io->boldRed("Could not get AWS Organizations so will not check if e-mail already exists", true);
-            $awsOrganizations = [];
-        }
+        $awsOrganizations = $this->getAwsOrganizations();
 
         $emailValidator = function ($value) use ($awsOrganizations) {
             if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
@@ -84,19 +79,19 @@ class AwsCommand extends Ahc\Cli\Input\Command
             return $value;
         };
 
-        // foreach(["security", "local", "infra", "staging", "prod"] as $environment) {
-        //     if (!$this->{$environment . "Email"}) {
-        //         $io->write("Choose an email for the root user of the $environment account", true);
-        //         $io->write("You can use aliasing here for example alex+$environment@elasticscale.cloud (provided your email provider supports it)", true);
-        //         $this->set($environment . "Email", $io->prompt('Enter the email', null, $emailValidator));
-        //     }
-        // }
+        foreach(["security", "local", "infra", "staging", "prod"] as $environment) {
+            if (!$this->{$environment . "Email"}) {
+                $io->write("Choose an email for the root user of the $environment account", true);
+                $io->write("You can use aliasing here for example alex+$environment@elasticscale.cloud (provided your email provider supports it)", true);
+                $this->set($environment . "Email", $io->prompt('Enter the email', null, $emailValidator));
+            }
+        }
 
         $io->write("This is your input, is this correct?", true);
 
         $io->table([
-            ['field' => 'awsAccessKeyId', $this->awsAccessKeyId],
-            ['field' => 'modulePrefix', $this->modulePrefix],
+            ['field' => 'awsAccessKeyId', 'input' => $this->awsAccessKeyId],
+            ['field' => 'modulePrefix', 'input' => $this->modulePrefix],
             ['field' => 'ouName', 'input' => $this->ouName],
             ['field' => 'securityEmail', 'input' => $this->securityEmail],
             ['field' => 'localEmail', 'input' => $this->localEmail],
@@ -204,53 +199,61 @@ class AwsCommand extends Ahc\Cli\Input\Command
     }
 
     private function createInfrastructureRole($env, $infrastructureAccountId, $targetAccountId)
-    {
+    {    
         $io = $this->app()->io();
-        $io->comment("Creating infrastructure role for $env", true);
-        $stsClient = $this->getStsClient();
-        $ARN = "arn:aws:iam::$targetAccountId:role/OrganizationAccountAccessRole";
-        $sessionName = "create-infrastructure-role";
-        $result = $stsClient->AssumeRole([
-            'RoleArn' => $ARN,
-            'RoleSessionName' => $sessionName,
-        ]);
-        $credentials = [
-         'key'    => $result['Credentials']['AccessKeyId'],
-         'secret' => $result['Credentials']['SecretAccessKey'],
-         'token'  => $result['Credentials']['SessionToken']
-        ];
-        $iamClient = new Aws\Iam\IamClient([
-             'credentials' => $credentials,
-             'region' => 'us-east-2',
-             'version' => '2010-05-08'
-         ]);
+        $io->comment("Creating infrastructure role for $env (waiting for 60 seconds first so AWS can create the IAM role in the new account, its eventually consistent)", true);
+        sleep(60);
         $roleName = "{$this->modulePrefix}-$env-role";
-        $iamClient->createRole([
-            'AssumeRolePolicyDocument' => json_encode([
-                "Version" => "2012-10-17",
-                "Statement" => [
-                    [
-                        "Effect" => "Allow",
-                        "Action" => "sts:AssumeRole",
-                        "Principal" => [
-                            "AWS" => $infrastructureAccountId,
+        try {
+            $stsClient = $this->getStsClient();
+            $ARN = "arn:aws:iam::$targetAccountId:role/OrganizationAccountAccessRole";
+            $sessionName = "create-infrastructure-role";
+            $result = $stsClient->AssumeRole([
+                'RoleArn' => $ARN,
+                'RoleSessionName' => $sessionName,
+            ]);
+            $credentials = [
+             'key'    => $result['Credentials']['AccessKeyId'],
+             'secret' => $result['Credentials']['SecretAccessKey'],
+             'token'  => $result['Credentials']['SessionToken']
+            ];
+            $iamClient = new Aws\Iam\IamClient([
+                 'credentials' => $credentials,
+                 'region' => 'us-east-2',
+                 'version' => '2010-05-08'
+             ]);
+           
+            $iamClient->createRole([
+                'AssumeRolePolicyDocument' => json_encode([
+                    "Version" => "2012-10-17",
+                    "Statement" => [
+                        [
+                            "Effect" => "Allow",
+                            "Action" => "sts:AssumeRole",
+                            "Principal" => [
+                                "AWS" => $infrastructureAccountId,
+                            ]
                         ]
                     ]
-                ]
-                    ]),
-            'Description' => 'This role provisions the Terragrunt infrastructure',
-            'RoleName' => $roleName,
-        ]);
-        $iamClient->attachRolePolicy([
-            'PolicyArn' => "arn:aws:iam::aws:policy/AdministratorAccess",
-            'RoleName' => $roleName,
-        ]);
+                        ]),
+                'Description' => 'This role provisions the Terragrunt infrastructure',
+                'RoleName' => $roleName,
+            ]);
+            $iamClient->attachRolePolicy([
+                'PolicyArn' => "arn:aws:iam::aws:policy/AdministratorAccess",
+                'RoleName' => $roleName,
+            ]);
+        } catch(Exception $e) {
+            $io->boldRed("Could not create infrastructure role: " . $e->getMessage(), true);
+            $io->boldRed("Must create it yourself in $targetAccountId with name $roleName", true);
+            return 1;
+        }
     }
 
     private function moveAccount($accountId, $fromId, $toId)
     {
         $io = $this->app()->io();
-        $io->comment("Moving $accountId from $from to $toId", true);
+        $io->comment("Moving $accountId from $fromId to $toId", true);
 
         $client = $this->getOrganizationClient();
         $client->moveAccount([
