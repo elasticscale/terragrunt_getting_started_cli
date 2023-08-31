@@ -217,8 +217,10 @@ infrastructure_account_id              = "$infrastructureAccountId"
 EOT;
         $this->generateTempVarsFile("infrastructure_modules", $content);
         // rename it so the names are correct for an easy push
-        $gitRepoPathLast = end(explode("/", $gitRepoPath));
-        $gitRepoModulesPathLast = end(explode("/", $gitRepoModulesPath));
+        $partsA = explode("/", $gitRepoPath);
+        $gitRepoPathLast = end($partsA);
+        $partsB = explode("/", $gitRepoModulesPath);
+        $gitRepoModulesPathLast = end($partsB);
         rename($this->baseFolder . "infrastructure", $this->baseFolder . "$gitRepoPathLast");
         rename($this->baseFolder . "infrastructure_modules", $this->baseFolder . "$gitRepoModulesPath");
         $io->greenBold("Done! You can find the repos in the output folder and push them to your GIT organisation to continue.", true);
