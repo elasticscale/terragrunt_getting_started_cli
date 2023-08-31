@@ -9,5 +9,5 @@ $dotenv->safeLoad();
 
 $app = new Ahc\Cli\Application('ElasticScale Terragrunt repo initialization tool', 'v0.0.1');
 $app->add(new RepoCommand(), 'repo');
-// $app->add(new AwsCommand(), 'aws');
+$app->add(new AwsCommand(), 'aws');
 $app->handle($_SERVER['argv']);
